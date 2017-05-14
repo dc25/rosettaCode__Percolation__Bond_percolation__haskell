@@ -5,15 +5,15 @@ import           Data.Array.Unboxed
 import           Data.List
 import           Formatting
  
-type Field = UArray (Int, Int) Char
+data Field = Cells (UArray (Int, Int) Char)
  
 -- Start percolating some seepage through a field.
 -- Recurse to continue percolation with spreading seepage.
 percolateR :: [(Int, Int)] -> Field -> (Field, [(Int,Int)])
-percolateR [] f = (f, [])
-percolateR seep f = percolateR   
+percolateR [] (Cells f) = (Cells f, [])
+percolateR seep (Cells f) = percolateR   
                        (concat $ fmap neighbors validSeep) 
-                       (f // map (\p -> (p,'.')) validSeep) where
+                       (Cells (f // map (\p -> (p,'.')) validSeep)) where
     neighbors p@(r,c) = [(r-1,c), (r+1,c), (r, c-1), (r, c+1)]
     ((rLo,cLo),(rHi,cHi)) = bounds f
     validSeep = filter (\p@(r,c) -> r >= rLo && 
@@ -24,8 +24,8 @@ percolateR seep f = percolateR
  
 -- Percolate a field;  Return the percolated field.
 percolate :: Field -> Field
-percolate start = 
-    let ((_,_),(_,cHi)) = bounds start
+percolate start@(Cells f) = 
+    let ((_,_),(_,cHi)) = bounds f
         (final, _) = percolateR [(0,c) | c <- [0..cHi]] start
     in final
  
@@ -33,14 +33,14 @@ percolate start =
 randomField :: Int -> Int -> Double -> Rand StdGen Field
 randomField rows cols threshold = do
     rnd <- replicateM rows (replicateM cols $ getRandomR (0.0, 1.0))
-    return $ array ((0,0), (rows-1, cols-1)) 
+    return $ Cells $ array ((0,0), (rows-1, cols-1)) 
                     [((r,c), if rnd !! r !! c < threshold then ' ' 
                              else '#') 
                      | r <- [0..rows-1], c <- [0..cols-1] ] 
  
 -- Assess whether or not percolation reached bottom of field.
 leaky :: Field -> Bool
-leaky f = '.' `elem` [f!(rHi,c) | c <- [cLo..cHi]] where
+leaky (Cells f) = '.' `elem` [f!(rHi,c) | c <- [cLo..cHi]] where
                ((_,cLo),(rHi,cHi)) = bounds f
  
 -- Run test once; Return bool indicating success or failure.
@@ -56,7 +56,7 @@ multiTest repeats rows cols threshold = do
     return $ fromIntegral leakyCount / fromIntegral repeats
  
 showField :: Field -> IO ()
-showField a =   mapM_ print [ [ a!(r,c) | c <- [cLo..cHi]] | r <- [rLo..rHi]]
+showField (Cells a) =   mapM_ print [ [ a!(r,c) | c <- [cLo..cHi]] | r <- [rLo..rHi]]
               where ((rLo,cLo),(rHi,cHi)) = bounds a
  
 main :: IO ()
