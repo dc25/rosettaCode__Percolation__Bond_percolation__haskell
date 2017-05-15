@@ -38,19 +38,22 @@ percolate start@(Field f _ _) =
     in final
  
 -- Generate a random field.
-randomField :: Int -> Int -> Double -> Rand StdGen Field
-randomField width height threshold = do
+initField :: Int -> Int -> Double -> Rand StdGen Field
+initField width height threshold = do
     let toChar t = if t<threshold then ' ' else '#'
     rnd <- fmap toChar <$> getRandoms 
     let f = listArray ((0,0), (width-1, height-1)) rnd
 
     hrnd <- fmap (<threshold) <$> getRandoms
-    let h = listArray ((0,0),(width, height-1)) hrnd
+    let h0 = listArray ((0,0),(width, height-1)) hrnd
+        h1 = h0 // [((0,y), True) | y <- [0..height-1]]
+        h2 = h1 // [((width,y), True) | y <- [0..height-1]]
 
     vrnd <- fmap (<threshold) <$> getRandoms 
-    let v = listArray ((0,0),(width-1, height)) vrnd
+    let v0 = listArray ((0,0),(width-1, height)) vrnd
+    let v1 = v0 // [((x,0), True) | x <- [0..width-1]]
 
-    return $ Field f h v
+    return $ Field f h2 v1
  
 -- Assess whether or not percolation reached bottom of field.
 leaky :: Field -> Bool
@@ -60,7 +63,7 @@ leaky (Field f _ _) = '.' `elem` [f!(x,yHi) | x <- [xLo..xHi]] where
 -- Run test once; Return bool indicating success or failure.
 oneTest :: Int -> Int -> Double -> Rand StdGen Bool
 oneTest width height threshold = 
-    leaky . percolate <$> randomField width height threshold
+    leaky . percolate <$> initField width height threshold
  
 -- Run test multple times; Return the number of tests that pass
 multiTest :: Int -> Int -> Int -> Double -> Rand StdGen Double
@@ -90,7 +93,7 @@ showField (Field a h v) =  do
 main :: IO ()
 main = do
   g <- getStdGen
-  let (startField, g2) = runRand (randomField 15 15 0.6) g
+  let (startField, g2) = runRand (initField 15 15 0.6) g
   putStrLn "Unpercolated field with 0.6 threshold."
   putStrLn ""
   showField startField
