@@ -69,7 +69,7 @@ oneTest width height threshold =
 multiTest :: Int -> Int -> Int -> Double -> Rand StdGen Double
 multiTest repeats width height threshold = do
     results <- replicateM repeats $ oneTest width height threshold
-    let leakyCount = length $ filter (==True) results
+    let leakyCount = length $ filter id results
     return $ fromIntegral leakyCount / fromIntegral repeats
  
 alternate :: [a] -> [a] -> [a]
