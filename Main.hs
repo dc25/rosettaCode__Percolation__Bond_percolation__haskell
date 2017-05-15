@@ -39,18 +39,16 @@ percolate start@(Field f _ _) =
 -- Generate a random field.
 randomField :: Int -> Int -> Double -> Rand StdGen Field
 randomField rows cols threshold = do
-    rnd <- replicateM rows (replicateM cols $ getRandomR (0.0, 1.0))
-    hrnd <- replicateM (rows+1) (replicateM (cols+1) $ getRandomR (0.0, 1.0))
-    vrnd <- replicateM (rows+1) (replicateM (cols+1) $ getRandomR (0.0, 1.0))
-    let f = array ((0,0), (rows-1, cols-1)) 
-                    [((r,c), if rnd !! r !! c < threshold then ' ' else '#') 
-                     | r <- [0..rows-1], c <- [0..cols-1] ] 
-    let h = array ((0,0), (rows, cols)) 
-                    [((r,c), hrnd !! r !! c < threshold) 
-                     | r <- [0..rows], c <- [0..cols] ] 
-    let v = array ((0,0), (rows, cols)) 
-                    [((r,c), vrnd !! r !! c < threshold) 
-                     | r <- [0..rows], c <- [0..cols] ] 
+    let toChar t = if (t<threshold) then ' ' else '#'
+    rnd <- fmap toChar <$> getRandoms 
+    let f = listArray ((0,0), (rows-1, cols-1)) rnd
+
+    hrnd <- fmap (<threshold) <$> getRandoms
+    let h = listArray ((0,0),(rows, cols)) hrnd
+
+    vrnd <- fmap (<threshold) <$> getRandoms 
+    let v = listArray ((0,0),(rows, cols)) vrnd
+
     return $ Field f h v
  
 -- Assess whether or not percolation reached bottom of field.
