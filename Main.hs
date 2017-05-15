@@ -9,26 +9,28 @@ data Field = Field { f :: UArray (Int, Int) Char
                    , hWall :: UArray (Int, Int) Bool  
                    , vWall :: UArray (Int, Int) Bool  
                    }
-
  
 -- Start percolating some seepage through a field.
 -- Recurse to continue percolation with spreading seepage.
 percolateR :: [(Int, Int)] -> Field -> (Field, [(Int,Int)])
 percolateR [] (Field f h v) = (Field f h v, [])
-percolateR seep (Field f h v) = percolateR   
-                       (concatMap neighbors validSeep)
-                       (Field (f // map (\p -> (p,'.')) validSeep) h v) where
-    north (x,y) = if v ! (x  ,y  ) then [] else [(x  ,y-1)]
-    south (x,y) = if v ! (x  ,y+1) then [] else [(x  ,y+1)]
-    west  (x,y) = if h ! (x  ,y  ) then [] else [(x-1,y  )]
-    east  (x,y) = if h ! (x+1,y  ) then [] else [(x+1,y  )]
-    neighbors (x,y) = north(x,y) ++ south(x,y) ++ west(x,y) ++ east(x,y)
-    ((xLo,yLo),(xHi,yHi)) = bounds f
-    validSeep = filter (\p@(x,y) ->    x >= xLo 
-                                    && x <= xHi 
-                                    && y >= yLo 
-                                    && y <= yHi 
-                                    && f!p == ' ') $ nub $ sort seep
+percolateR seep (Field f h v) = 
+    let ((xLo,yLo),(xHi,yHi)) = bounds f
+        validSeep = filter (\p@(x,y) ->    x >= xLo 
+                                        && x <= xHi 
+                                        && y >= yLo 
+                                        && y <= yHi 
+                                        && f!p == ' ') $ nub $ sort seep
+
+        north (x,y) = if v ! (x  ,y  ) then [] else [(x  ,y-1)]
+        south (x,y) = if v ! (x  ,y+1) then [] else [(x  ,y+1)]
+        west  (x,y) = if h ! (x  ,y  ) then [] else [(x-1,y  )]
+        east  (x,y) = if h ! (x+1,y  ) then [] else [(x+1,y  )]
+        neighbors (x,y) = north(x,y) ++ south(x,y) ++ west(x,y) ++ east(x,y)
+
+    in  percolateR 
+            (concatMap neighbors validSeep)
+            (Field (f // map (\p -> (p,'.')) validSeep) h v) where
  
 -- Percolate a field;  Return the percolated field.
 percolate :: Field -> Field
@@ -49,7 +51,7 @@ initField width height threshold = do
 
     vrnd <- fmap (<threshold) <$> getRandoms 
     let v0 = listArray ((0,0),(width-1, height)) vrnd
-    let v1 = v0 // [((x,0), True) | x <- [0..width-1]]
+        v1 = v0 // [((x,0), True) | x <- [0..width-1]]
 
     return $ Field f h2 v1
  
@@ -103,10 +105,10 @@ main = do
   showField $ percolate startField
 
   let testCount = 20000
-  let d = 10
+      d = 10
   putStrLn ""
-  putStrLn ("Results of running percolation test " ++ show testCount ++ " times with thresholds ranging from 1/" ++ show d ++ " to " ++ show d ++ "/" ++ show d ++ " .")
-  let ns = [1..d]
+  putStrLn ("Results of running percolation test " ++ show testCount ++ " times with thresholds ranging from 0/" ++ show d ++ " to " ++ show d ++ "/" ++ show d ++ " .")
+  let ns = [0..d]
   let tests = sequence [multiTest testCount 10 10 v 
                            | n <- ns,
                              let v = fromIntegral n / fromIntegral d ]
