@@ -5,9 +5,9 @@ import           Data.Array.Unboxed
 import           Data.List
 import           Formatting
  
-data Field = Field { f :: (UArray (Int, Int) Char)  
-                   , hWall :: (UArray (Int, Int) Bool)  
-                   , vWall :: (UArray (Int, Int) Bool)  
+data Field = Field { f :: UArray (Int, Int) Char  
+                   , hWall :: UArray (Int, Int) Bool  
+                   , vWall :: UArray (Int, Int) Bool  
                    }
 
  
@@ -16,7 +16,7 @@ data Field = Field { f :: (UArray (Int, Int) Char)
 percolateR :: [(Int, Int)] -> Field -> (Field, [(Int,Int)])
 percolateR [] (Field f h v) = (Field f h v, [])
 percolateR seep (Field f h v) = percolateR   
-                       (concat $ fmap neighbors validSeep) 
+                       (concatMap neighbors validSeep)
                        (Field (f // map (\p -> (p,'.')) validSeep) h v) where
     north (x,y) = [(x,y-1)]
     south (x,y) = [(x,y+1)]
@@ -33,34 +33,34 @@ percolateR seep (Field f h v) = percolateR
 -- Percolate a field;  Return the percolated field.
 percolate :: Field -> Field
 percolate start@(Field f _ _) = 
-    let ((_,_),(_,yHi)) = bounds f
-        (final, _) = percolateR [(0,y) | y <- [0..yHi]] start
+    let ((_,_),(xHi,_)) = bounds f
+        (final, _) = percolateR [(x,0) | x <- [0..xHi]] start
     in final
  
 -- Generate a random field.
 randomField :: Int -> Int -> Double -> Rand StdGen Field
 randomField width height threshold = do
-    let toChar t = if (t<threshold) then ' ' else '#'
+    let toChar t = if t<threshold then ' ' else '#'
     rnd <- fmap toChar <$> getRandoms 
     let f = listArray ((0,0), (width-1, height-1)) rnd
 
     hrnd <- fmap (<threshold) <$> getRandoms
-    let h = listArray ((0,0),(width-1, height)) hrnd
+    let h = listArray ((0,0),(width, height-1)) hrnd
 
     vrnd <- fmap (<threshold) <$> getRandoms 
-    let v = listArray ((0,0),(width, height-1)) vrnd
+    let v = listArray ((0,0),(width-1, height)) vrnd
 
     return $ Field f h v
  
 -- Assess whether or not percolation reached bottom of field.
 leaky :: Field -> Bool
-leaky (Field f _ _) = '.' `elem` [f!(xHi,y) | y <- [yLo..yHi]] where
-               ((_,yLo),(xHi,yHi)) = bounds f
+leaky (Field f _ _) = '.' `elem` [f!(x,yHi) | x <- [xLo..xHi]] where
+               ((xLo,yLo),(xHi,yHi)) = bounds f
  
 -- Run test once; Return bool indicating success or failure.
 oneTest :: Int -> Int -> Double -> Rand StdGen Bool
 oneTest width height threshold = 
-    leaky <$> percolate <$> randomField width height threshold
+    leaky . percolate <$> randomField width height threshold
  
 -- Run test multple times; Return the number of tests that pass
 multiTest :: Int -> Int -> Int -> Double -> Rand StdGen Double
@@ -76,8 +76,15 @@ alternate (a:as) bs = a : alternate bs as
 showField :: Field -> IO ()
 showField (Field a h v) =  do
     let ((xLo,yLo),(xHi,yHi)) = bounds a
-        fLines =  map show [ [ a!(x,y) | y <- [yLo..yHi]] | x <- [xLo..xHi]]
-    mapM_ putStrLn fLines
+        fLines =  [ [ a!(x,y) | x <- [xLo..xHi]] | y <- [yLo..yHi]]
+        hLines =  [ [ if h!(x,y) then '|' else ' ' | x <- [xLo..xHi+1]] | y <- [yLo..yHi]]
+        vLines =  [ [ if v!(x,y) then '-' else ' ' | x <- [xLo..xHi]] | y <- [yLo..yHi+1]]
+        lattice =  [ [ '+' | x <- [xLo..xHi+1]] | y <- [yLo..yHi+1]]
+
+        hDrawn = zipWith alternate hLines fLines
+        vDrawn = zipWith alternate lattice vLines
+        aDrawn = alternate vDrawn hDrawn
+    mapM_ putStrLn aDrawn
 
 
 main :: IO ()
