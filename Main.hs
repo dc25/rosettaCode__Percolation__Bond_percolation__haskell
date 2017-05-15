@@ -77,12 +77,12 @@ multiTest repeats width height threshold = do
     let leakyCount = length $ filter id results
     return $ fromIntegral leakyCount / fromIntegral repeats
 
--- helper function for display
+-- Helper function for display
 alternate :: [a] -> [a] -> [a]
 alternate [] _ = []
 alternate (a:as) bs = a : alternate bs as
  
--- display a field with walls and leaks.
+-- Display a field with walls and leaks.
 showField :: Field -> IO ()
 showField field@(Field a h v) =  do
     let ((xLo,yLo),(xHi,yHi)) = bounds a
