@@ -18,10 +18,10 @@ percolateR [] (Field f h v) = (Field f h v, [])
 percolateR seep (Field f h v) = percolateR   
                        (concatMap neighbors validSeep)
                        (Field (f // map (\p -> (p,'.')) validSeep) h v) where
-    north (x,y) = [(x,y-1)]
-    south (x,y) = [(x,y+1)]
-    west (x,y) =  [(x-1,y)]
-    east (x,y) =  [(x+1,y)]
+    north (x,y) = if v ! (x  ,y  ) then [] else [(x  ,y-1)]
+    south (x,y) = if v ! (x  ,y+1) then [] else [(x  ,y+1)]
+    west  (x,y) = if h ! (x  ,y  ) then [] else [(x-1,y  )]
+    east  (x,y) = if h ! (x+1,y  ) then [] else [(x+1,y  )]
     neighbors (x,y) = north(x,y) ++ south(x,y) ++ west(x,y) ++ east(x,y)
     ((xLo,yLo),(xHi,yHi)) = bounds f
     validSeep = filter (\p@(x,y) -> x >= xLo && 
