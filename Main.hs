@@ -24,7 +24,8 @@ percolateR seep (Field f h v) = percolateR
     east (r,c) =  [(r, c+1)]
     neighbors (r,c) = north(r,c) ++ south(r,c) ++ west(r,c) ++ east(r,c)
     ((rLo,cLo),(rHi,cHi)) = bounds f
-    validSeep = filter (\p@(r,c) -> r >= rLo && r <= rHi && 
+    validSeep = filter (\p@(r,c) -> r >= rLo && 
+                                    r <= rHi && 
                                     c >= cLo && 
                                     c <= cHi && 
                                     f!p == ' ') $ nub $ sort seep
@@ -44,10 +45,10 @@ randomField rows cols threshold = do
     let f = listArray ((0,0), (rows-1, cols-1)) rnd
 
     hrnd <- fmap (<threshold) <$> getRandoms
-    let h = listArray ((0,0),(rows, cols)) hrnd
+    let h = listArray ((0,0),(rows-1, cols)) hrnd
 
     vrnd <- fmap (<threshold) <$> getRandoms 
-    let v = listArray ((0,0),(rows, cols)) vrnd
+    let v = listArray ((0,0),(rows, cols-1)) vrnd
 
     return $ Field f h v
  
@@ -64,14 +65,21 @@ oneTest rows cols threshold =
 -- Run test multple times; Return the number of tests that pass
 multiTest :: Int -> Int -> Int -> Double -> Rand StdGen Double
 multiTest repeats rows cols threshold = do
-    x <- replicateM repeats $ oneTest rows cols threshold
-    let leakyCount = length $ filter (==True) x
+    results <- replicateM repeats $ oneTest rows cols threshold
+    let leakyCount = length $ filter (==True) results
     return $ fromIntegral leakyCount / fromIntegral repeats
  
-showField :: Field -> IO ()
-showField (Field a _ _) =   mapM_ print [ [ a!(r,c) | c <- [cLo..cHi]] | r <- [rLo..rHi]]
-              where ((rLo,cLo),(rHi,cHi)) = bounds a
+alternate :: [a] -> [a] -> [a]
+alternate [] _ = []
+alternate (a:as) bs = a : alternate bs as
  
+showField :: Field -> IO ()
+showField (Field a h v) =  do
+    let ((rLo,cLo),(rHi,cHi)) = bounds a
+        fLines =  map show [ [ a!(r,c) | c <- [cLo..cHi]] | r <- [rLo..rHi]]
+    mapM_ putStrLn fLines
+
+
 main :: IO ()
 main = do
   g <- getStdGen
