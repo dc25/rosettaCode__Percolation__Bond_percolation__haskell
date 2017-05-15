@@ -30,7 +30,7 @@ percolateR seep (Field f h v) =
 
     in  percolateR 
             (concatMap neighbors validSeep)
-            (Field (f // map (\p -> (p,'.')) validSeep) h v) where
+            (Field (f // map (\p -> (p,'.')) validSeep) h v) 
  
 -- Percolate a field;  Return the percolated field.
 percolate :: Field -> Field
@@ -59,18 +59,15 @@ initField width height threshold = do
 leaks :: Field -> [Bool]
 leaks (Field f _ v) = 
     let ((xLo,_),(xHi,yHi)) = bounds f
-    in [f!(x,yHi)=='.' && (not $ v!(x,yHi+1)) | x <- [xLo..xHi]]
-
--- Assess whether or not percolation reached bottom of field.
-leaky :: Field -> Bool
-leaky field = any id $ leaks field
+    in [f!(x,yHi)=='.' && not (v!(x,yHi+1)) | x <- [xLo..xHi]]
 
 -- Run test once; Return bool indicating success or failure.
 oneTest :: Int -> Int -> Double -> Rand StdGen Bool
 oneTest width height threshold = 
-    leaky . percolate <$> initField width height threshold
+    let randomField = initField width height threshold
+    in  or.leaks.percolate <$> randomField
  
--- Run test multple times; Return the number of tests that pass
+-- Run test multple times; Return the number of tests that pass.
 multiTest :: Int -> Int -> Int -> Double -> Rand StdGen Double
 multiTest repeats width height threshold = do
     results <- replicateM repeats $ oneTest width height threshold
