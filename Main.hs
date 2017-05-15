@@ -11,7 +11,7 @@ data Field = Field { f :: UArray (Int, Int) Char
                    }
  
 -- Start percolating some seepage through a field.
--- Recurse to continue percolation with spreading seepage.
+-- Recurse to continue percolation with new seepage.
 percolateR :: [(Int, Int)] -> Field -> (Field, [(Int,Int)])
 percolateR [] (Field f h v) = (Field f h v, [])
 percolateR seep (Field f h v) = 
@@ -88,21 +88,19 @@ showField field@(Field a h v) =  do
         vLines =  [ [ if v!(x,y) then '-' else ' ' | x <- [xLo..xHi]] | y <- [yLo..yHi+1]]
         lattice =  [ [ '+' | x <- [xLo..xHi+1]] | y <- [yLo..yHi+1]]
 
-        leakLine = [ if l then '.' else ' ' | l <- leaks field]
-
         hDrawn = zipWith alternate hLines fLines
         vDrawn = zipWith alternate lattice vLines
-        aDrawn = alternate vDrawn hDrawn
-    mapM_ putStrLn aDrawn
+    mapM_ putStrLn $ alternate vDrawn hDrawn
 
-    let leaksDrawn = alternate (repeat ' ') leakLine
-    putStrLn leaksDrawn
+    let leakLine = [ if l then '.' else ' ' | l <- leaks field]
+    putStrLn $ alternate (repeat ' ') leakLine
 
 main :: IO ()
 main = do
   g <- getStdGen
   let threshold = 0.45
       (startField, g2) = runRand (initField 10 10 threshold) g
+
   putStrLn ("Unpercolated field with " ++ show threshold ++ " threshold.")
   putStrLn ""
   showField startField
@@ -112,14 +110,14 @@ main = do
   putStrLn ""
   showField $ percolate startField
 
-  let testCount = 20000
-      d = 10
+  let testCount = 10000
+      densityCount = 10
   putStrLn ""
-  putStrLn ("Results of running percolation test " ++ show testCount ++ " times with thresholds ranging from 0/" ++ show d ++ " to " ++ show d ++ "/" ++ show d ++ " .")
-  let ns = [0..d]
+  putStrLn ("Results of running percolation test " ++ show testCount ++ " times with thresholds ranging from 0/" ++ show densityCount ++ " to " ++ show densityCount ++ "/" ++ show densityCount ++ " .")
+  let densities = [0..densityCount]
   let tests = sequence [multiTest testCount 10 10 v 
-                           | n <- ns,
-                             let v = fromIntegral n / fromIntegral d ]
-  let results = zip ns (evalRand tests g2)
-  mapM_ print [format ("p=" % int % "/" % int % " -> " % fixed 4) n d x | (n,x) <- results]
+                           | density <- densities,
+                             let v = fromIntegral density / fromIntegral densityCount ]
+  let results = zip densities (evalRand tests g2)
+  mapM_ print [format ("p=" % int % "/" % int % " -> " % fixed 4) density densityCount x | (density,x) <- results]
  
