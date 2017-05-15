@@ -24,11 +24,11 @@ percolateR seep (Field f h v) = percolateR
     east  (x,y) = if h ! (x+1,y  ) then [] else [(x+1,y  )]
     neighbors (x,y) = north(x,y) ++ south(x,y) ++ west(x,y) ++ east(x,y)
     ((xLo,yLo),(xHi,yHi)) = bounds f
-    validSeep = filter (\p@(x,y) -> x >= xLo && 
-                                    x <= xHi && 
-                                    y >= yLo && 
-                                    y <= yHi && 
-                                    f!p == ' ') $ nub $ sort seep
+    validSeep = filter (\p@(x,y) ->    x >= xLo 
+                                    && x <= xHi 
+                                    && y >= yLo 
+                                    && y <= yHi 
+                                    && f!p == ' ') $ nub $ sort seep
  
 -- Percolate a field;  Return the percolated field.
 percolate :: Field -> Field
@@ -40,9 +40,7 @@ percolate start@(Field f _ _) =
 -- Generate a random field.
 initField :: Int -> Int -> Double -> Rand StdGen Field
 initField width height threshold = do
-    let toChar t = if t<threshold then ' ' else '#'
-    rnd <- fmap toChar <$> getRandoms 
-    let f = listArray ((0,0), (width-1, height-1)) rnd
+    let f = listArray ((0,0), (width-1, height-1)) $ repeat ' '
 
     hrnd <- fmap (<threshold) <$> getRandoms
     let h0 = listArray ((0,0),(width, height-1)) hrnd
@@ -57,9 +55,10 @@ initField width height threshold = do
  
 -- Assess whether or not percolation reached bottom of field.
 leaky :: Field -> Bool
-leaky (Field f _ _) = '.' `elem` [f!(x,yHi) | x <- [xLo..xHi]] where
-               ((xLo,yLo),(xHi,yHi)) = bounds f
- 
+leaky (Field f _ v) = 
+    let ((xLo,_),(xHi,yHi)) = bounds f
+    in any id [f!(x,yHi)=='.' && (not $ v!(x,yHi+1)) | x <- [xLo..xHi]]
+
 -- Run test once; Return bool indicating success or failure.
 oneTest :: Int -> Int -> Double -> Rand StdGen Bool
 oneTest width height threshold = 
@@ -89,12 +88,12 @@ showField (Field a h v) =  do
         aDrawn = alternate vDrawn hDrawn
     mapM_ putStrLn aDrawn
 
-
 main :: IO ()
 main = do
   g <- getStdGen
-  let (startField, g2) = runRand (initField 15 15 0.6) g
-  putStrLn "Unpercolated field with 0.6 threshold."
+  let threshold = 0.45
+      (startField, g2) = runRand (initField 10 10 threshold) g
+  putStrLn ("Unpercolated field with " ++ show threshold ++ " threshold.")
   putStrLn ""
   showField startField
  
@@ -102,12 +101,13 @@ main = do
   putStrLn "Same field after percolation."
   putStrLn ""
   showField $ percolate startField
- 
-  putStrLn ""
-  putStrLn "Results of running percolation test 10000 times with thresholds ranging from 0.0 to 1.0 ."
+
+  let testCount = 20000
   let d = 10
-  let ns = [0..10]
-  let tests = sequence [multiTest 10000 15 15 v 
+  putStrLn ""
+  putStrLn ("Results of running percolation test " ++ show testCount ++ " times with thresholds ranging from 1/" ++ show d ++ " to " ++ show d ++ "/" ++ show d ++ " .")
+  let ns = [1..d]
+  let tests = sequence [multiTest testCount 10 10 v 
                            | n <- ns,
                              let v = fromIntegral n / fromIntegral d ]
   let results = zip ns (evalRand tests g2)
