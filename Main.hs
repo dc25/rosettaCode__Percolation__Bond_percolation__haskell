@@ -82,6 +82,7 @@ alternate :: [a] -> [a] -> [a]
 alternate [] _ = []
 alternate (a:as) bs = a : alternate bs as
  
+-- display a field with walls and leaks.
 showField :: Field -> IO ()
 showField field@(Field a h v) =  do
     let ((xLo,yLo),(xHi,yHi)) = bounds a
