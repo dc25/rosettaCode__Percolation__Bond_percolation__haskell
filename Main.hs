@@ -56,10 +56,14 @@ initField width height threshold = do
     return $ Field f h2 v1
  
 -- Assess whether or not percolation reached bottom of field.
-leaky :: Field -> Bool
-leaky (Field f _ v) = 
+leaks :: Field -> [Bool]
+leaks (Field f _ v) = 
     let ((xLo,_),(xHi,yHi)) = bounds f
-    in any id [f!(x,yHi)=='.' && (not $ v!(x,yHi+1)) | x <- [xLo..xHi]]
+    in [f!(x,yHi)=='.' && (not $ v!(x,yHi+1)) | x <- [xLo..xHi]]
+
+-- Assess whether or not percolation reached bottom of field.
+leaky :: Field -> Bool
+leaky field = any id $ leaks field
 
 -- Run test once; Return bool indicating success or failure.
 oneTest :: Int -> Int -> Double -> Rand StdGen Bool
@@ -72,23 +76,29 @@ multiTest repeats width height threshold = do
     results <- replicateM repeats $ oneTest width height threshold
     let leakyCount = length $ filter id results
     return $ fromIntegral leakyCount / fromIntegral repeats
- 
+
+-- helper function for display
 alternate :: [a] -> [a] -> [a]
 alternate [] _ = []
 alternate (a:as) bs = a : alternate bs as
  
 showField :: Field -> IO ()
-showField (Field a h v) =  do
+showField field@(Field a h v) =  do
     let ((xLo,yLo),(xHi,yHi)) = bounds a
         fLines =  [ [ a!(x,y) | x <- [xLo..xHi]] | y <- [yLo..yHi]]
         hLines =  [ [ if h!(x,y) then '|' else ' ' | x <- [xLo..xHi+1]] | y <- [yLo..yHi]]
         vLines =  [ [ if v!(x,y) then '-' else ' ' | x <- [xLo..xHi]] | y <- [yLo..yHi+1]]
         lattice =  [ [ '+' | x <- [xLo..xHi+1]] | y <- [yLo..yHi+1]]
 
+        leakLine = [ if l then '.' else ' ' | l <- leaks field]
+
         hDrawn = zipWith alternate hLines fLines
         vDrawn = zipWith alternate lattice vLines
         aDrawn = alternate vDrawn hDrawn
     mapM_ putStrLn aDrawn
+
+    let leaksDrawn = alternate (repeat ' ') leakLine
+    putStrLn leaksDrawn
 
 main :: IO ()
 main = do
