@@ -64,15 +64,14 @@ leaks (Field f _ v) =
 -- Run test once; Return bool indicating success or failure.
 oneTest :: Int -> Int -> Double -> Rand StdGen Bool
 oneTest width height threshold = 
-    let randomField = initField width height threshold
-    in  or.leaks.percolate <$> randomField
+    or.leaks.percolate <$> initField width height threshold
  
 -- Run test multple times; Return the number of tests that pass.
 multiTest :: Int -> Int -> Int -> Double -> Rand StdGen Double
-multiTest repeats width height threshold = do
-    results <- replicateM repeats $ oneTest width height threshold
+multiTest testCount width height threshold = do
+    results <- replicateM testCount $ oneTest width height threshold
     let leakyCount = length $ filter id results
-    return $ fromIntegral leakyCount / fromIntegral repeats
+    return $ fromIntegral leakyCount / fromIntegral testCount
 
 -- Helper function for display
 alternate :: [a] -> [a] -> [a]
