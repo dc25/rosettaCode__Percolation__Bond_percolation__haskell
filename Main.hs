@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-import           Control.Monad
-import           Control.Monad.Random
-import           Data.Array.Unboxed
-import           Data.List
-import           Formatting
+import Control.Monad
+import Control.Monad.Random
+import Data.Array.Unboxed
+import Data.List
+import Formatting
  
 data Field = Field { f :: UArray (Int, Int) Char  
                    , hWall :: UArray (Int, Int) Bool  
