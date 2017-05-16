@@ -45,13 +45,13 @@ initField width height threshold = do
     let f = listArray ((0,0), (width-1, height-1)) $ repeat ' '
 
     hrnd <- fmap (<threshold) <$> getRandoms
-    let h0 = listArray ((0,0),(width, height-1)) hrnd
-        h1 = h0 // [((0,y), True) | y <- [0..height-1]]
-        h2 = h1 // [((width,y), True) | y <- [0..height-1]]
+    let h0 = listArray ((0,0),(width, height-1)) hrnd       
+        h1 = h0 // [((0,y), True) | y <- [0..height-1]]     -- close left 
+        h2 = h1 // [((width,y), True) | y <- [0..height-1]] -- close right 
 
     vrnd <- fmap (<threshold) <$> getRandoms 
-    let v0 = listArray ((0,0),(width-1, height)) vrnd
-        v1 = v0 // [((x,0), True) | x <- [0..width-1]]
+    let v0 = listArray ((0,0),(width-1, height)) vrnd   
+        v1 = v0 // [((x,0), True) | x <- [0..width-1]]  -- close top
 
     return $ Field f h2 v1
  
